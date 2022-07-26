@@ -13,7 +13,7 @@ function App() {
         {/* <Map/> */}
         <Router>
           <Routes>
-            <Route path="/:Geojson" element={<Map />} />
+            <Route path="/:Type/:Geojson" element={<Map />} />
             {/* <Route path="/" element={<FristPage />} /> */}
             {/* <Route path="/:Token/:Kml/" element={<Map />} /> */}
             </Routes>
