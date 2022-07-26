@@ -80,8 +80,15 @@ function MapMarker(props) {
                     // window.longitude.postMessage((parseInt(value.latitude)/1000)/60);
                     // window.speed.postMessage(value.speed);
                     // window.heading.postMessage(parseInt(value.heading)/10);
-                    window.vid.postMessage(value.vID);
-
+                    // const json = {
+                    //     "vName": value.vName,
+                    //     "serialNo": value.serialNo,
+                    //     "latitude": (parseInt(value.latitude) / 1000) / 60,
+                    //     "longitude": (parseInt(value.longitude) / 1000) / 60,
+                    //     "speed": value.speed,
+                    //     "heading": parseInt(value.heading) / 10
+                    // }
+                    window.title.postMessage(value.vName)
                 }}
                 icon={
                     {
