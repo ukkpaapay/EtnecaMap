@@ -1,9 +1,10 @@
-import React, { useState } from "react";
-import { GoogleMap, useJsApiLoader, KmlLayer, Marker, Polyline, InfoWindow, } from '@react-google-maps/api';
+import React, { useState, useEffect, useCallback } from "react";
+import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow, Data, } from '@react-google-maps/api';
 import { useParams } from "react-router-dom";
-import shipjson from "../json/ship.json";
+// import shipjson from "../json/ship.json";
 import history24 from "../json/24.json";
 import "./map.css"
+import axios from "axios";
 
 const containerStyle = {
     width: '100%',
@@ -15,7 +16,7 @@ const mapOptions = {
     mapTypeControl: false,
     panControl: false,
     zoomControl: false,
-    keyboardShortcut:false,
+    keyboardShortcut: false,
     // zoomControlOptions : {
     //     position: google.maps.ControlPosition.RIGHT_CENTER
     // },
@@ -23,9 +24,6 @@ const mapOptions = {
     maxZoom: 22,
     rotateControl: false,
     fullscreenControl: false,
-};
-const center = {
-    lat: 7.878978, lng: 98.398392
 };
 const kml = [
     { id: 0, name: "ไม่มี", kml: 'null' },
@@ -53,7 +51,7 @@ function AllShip(props) {
                         strokeColor: "#FFF",
                         strokeWeight: 1,
                         fillOpacity: 1,
-                        fillColor: value.terminalStatus == "ปกติ" ? "#00F" : "#ea3423",
+                        fillColor: value.terminalStatus === "ปกติ" ? "#00F" : "#ea3423",
                         scale: 4,
                         rotation: parseInt(value.heading) / 10
                     }
@@ -65,101 +63,125 @@ function AllShip(props) {
 
 }
 
-function TrachShip(props) {
+function TrackShip(props) {
     const google = window.google;
-    
+
     return <>
         <Polyline
-            path={props.ship.map((value,index)=>({ lat: (parseInt(value.latitude) / 1000) / 60, lng: (parseInt(value.longitude) / 1000) / 60 }))}
+            path={props.ship.map((value, index) => ({ lat: (parseInt(value.latitude) / 1000) / 60, lng: (parseInt(value.longitude) / 1000) / 60 }))}
         />
         {props.ship.map((value, index) => (
             <Marker
-            key={index}
-            position={{ lat: (parseInt(value.latitude) / 1000) / 60, lng: (parseInt(value.longitude) / 1000) / 60 }}
-            onClick={() => {
-                window.title.postMessage(value.vName)
-            }}
-            icon={
-                {
-                    path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                    strokeColor: "#FFF",
-                    strokeWeight: 1,
-                    fillOpacity: 1,
-                    fillColor: index == 0 ? "#ea3423" : "#00F",
-                    scale: 4,
-                    rotation: parseInt(value.heading) / 10
+                key={index}
+                position={{ lat: (parseInt(value.latitude) / 1000) / 60, lng: (parseInt(value.longitude) / 1000) / 60 }}
+                onClick={() => {
+                    window.title.postMessage(value.vName)
+                }}
+                icon={
+                    {
+                        path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                        strokeColor: "#FFF",
+                        strokeWeight: 1,
+                        fillOpacity: 1,
+                        fillColor: index === 0 ? "#ea3423" : "#00F",
+                        scale: 4,
+                        rotation: parseInt(value.heading) / 10
+                    }
                 }
-            }
-        >
-        </Marker>
+            >
+            </Marker>
         ))}
     </>
 }
 
 function OneShip() {
     const google = window.google;
-return <Marker
-position={{ lat: (parseInt("574353") / 1000) / 60, lng: (parseInt("5804153") / 1000) / 60 }}
-icon={
-    {
-        path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-        strokeColor: "#FFF",
-        strokeWeight: 1,
-        fillOpacity: 1,
-        fillColor:"#00F",
-        scale: 4,
-        rotation: parseInt("0") / 10
-    }
-}
->
-</Marker>
+    return <Marker
+        position={{ lat: (parseInt("574353") / 1000) / 60, lng: (parseInt("5804153") / 1000) / 60 }}
+        icon={
+            {
+                path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                strokeColor: "#FFF",
+                strokeWeight: 1,
+                fillOpacity: 1,
+                fillColor: "#00F",
+                scale: 4,
+                rotation: parseInt("0") / 10
+            }
+        }
+    >
+    </Marker>
 }
 
 function MyMap() {
-    let { Type, Geojson } = useParams();
+    const [center, setCenter] = useState({ lat: 7.878978, lng: 98.398392 })
+    const [allship, setAllShip] = useState([])
+    // let { Type, Geojson } = useParams();
+    const [geoJsonData, setgeoJsonData] = useState('');
+    const [map, setMap] = React.useState(null)
+    const onMapLoad = useCallback((map) => setMap(map), []);
+
+    const handleChange = (event) => {
+        map.data.forEach(function (feature) {
+            map.data.remove(feature);
+        });
+
+
+          
+        setCenter({ lat: map.getCenter().lat(), lng: map.getCenter().lng() })
+        setgeoJsonData(event.target.value);
+        // setMap(null)
+    };
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
         googleMapsApiKey: 'AIzaSyDIMEOPBeQ-rHzg5kWLRhWyBPlpjrDSfz4'
         //AIzaSyDIMEOPBeQ-rHzg5kWLRhWyBPlpjrDSfz4
     })
 
-    const [, setMap] = React.useState(null)
 
-    const onLoad = React.useCallback(function callback(map) {
-        map.data.loadGeoJson(kml[parseInt(Geojson)].kml);
-        map.data.setStyle({
-            fillColor: 'transparent',
-            strokeWeight: 1
-        });
-        console.log(kml[parseInt(Geojson)].kml);
-        setMap(map)
-    }, [])
+
+    useEffect(() => {
+        if (map) {
+            axios.get('https://raw.githubusercontent.com/ukkpaapay/EtnecaMap/main/src/json/ship.json')
+                .then(response => response.data)
+                .then((data) => {
+                    setAllShip(data)
+                });
+            map.data.loadGeoJson(geoJsonData)
+            map.data.setStyle({
+                fillColor: 'transparent',
+                strokeWeight: 1
+            });
+        }
+    }, [map, geoJsonData]);
 
     const onUnmount = React.useCallback(function callback() {
         setMap(null)
     }, [])
-
     return isLoaded ?
-        <div>
+        <div className="parent">
             <GoogleMap
                 options={mapOptions}
                 mapContainerStyle={containerStyle}
-                center={Type == 'all'?{
-                    lat: 7.878978, lng: 98.398392
-                }:{
-                    lat: (parseInt(history24[0].latitude) / 1000) / 60, lng: (parseInt(history24[0].longitude) / 1000) / 60
-                }}
+                // center={Type === 'all' ? center : {
+                //     lat: (parseInt(history24[0].latitude) / 1000) / 60, lng: (parseInt(history24[0].longitude) / 1000) / 60
+                // }}
+                center={center}
                 zoom={7}
-                onLoad={onLoad}
+                onLoad={onMapLoad}
                 onUnmount={onUnmount}
             >
-                {Type == 'one'?<OneShip/>:<></>}
-                {Type == 'track'?<TrachShip ship={history24} />:<></>}
-                {Type == 'all'?<AllShip ship={shipjson} />:<></>}
-                
-                
+                <AllShip ship={allship} />
+                {/* {Type === 'one' ? <OneShip /> : <></>} */}
+                {/* <TrackShip ship={history24} /> */}
+
             </GoogleMap>
-        </div> : <></>
+            <div className="inner"><select className="select" value={geoJsonData} onChange={handleChange}>
+                {kml.map((value, index) => <option key={index} value={value.kml}>{value.name}</option>)}
+            </select>
+            </div>
+        </div>
+        : <></>
 }
 
 export default React.memo(MyMap)

@@ -7,3 +7,30 @@ a[href^="https://maps.google.com/maps"]{display:none !important}
 .gmnoprint div {
     background:none !important;
 }
+.inner {
+    position: absolute;
+    top: 50px;
+    left: 50%;
+    transform: translate(-50%, 0);
+    background-color: transparent;
+    border-radius: 50px;
+  }
+
+  .parent {
+    position: relative;
+    background-color: lightgreen;
+    height: 100vh;
+    width: 100%;
+  }
+
+  .select {
+    color: black;
+    text-align-last: center;
+    width: 100%;
+    height: 40px;
+    border-radius: 50px;
+    border: none;
+    outline: none;
+    scroll-behavior: smooth;
+    background-color: white;
+}
