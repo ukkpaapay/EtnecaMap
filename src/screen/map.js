@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow, Data, } from '@react-google-maps/api';
 import { useParams } from "react-router-dom";
+import { useStream } from 'react-fetch-streams';
 // import shipjson from "../json/ship.json";
 import history24 from "../json/24.json";
 import "./map.css"
@@ -36,30 +37,57 @@ const kml = [
 ]
 function AllShip(props) {
     const google = window.google;
-    return <>
-        {props.ship.map((value, index) => (
-
+    console.log(props.ship);
+return<>
+    //     {props.ship?.map((value, index) => (
+            value.latitude?
             <Marker
                 key={index}
                 position={{ lat: (parseInt(value.latitude) / 1000) / 60, lng: (parseInt(value.longitude) / 1000) / 60 }}
-                onClick={() => {
-                    window.title.postMessage(value.vName)
-                }}
+                // onClick={() => {
+                //     window.title.postMessage(value.vName)
+                //     console.log(value.vName);
+                // }}
                 icon={
                     {
                         path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
                         strokeColor: "#FFF",
                         strokeWeight: 1,
                         fillOpacity: 1,
-                        fillColor: value.terminalStatus === "ปกติ" ? "#00F" : "#ea3423",
+                        fillColor: "#ea3423",
                         scale: 4,
                         rotation: parseInt(value.heading) / 10
                     }
                 }
             >
-            </Marker>
+            </Marker>:<></>
         ))}
-    </>
+</>
+    // return <>
+    //     {props.ship?.Messages?.map((value, index) => (
+    //         value.Payload?
+    //         <Marker
+    //             key={index}
+    //             position={{ lat: (parseInt(value.Payload?.Fields[0]?.Value) / 1000) / 60, lng: (parseInt(value.Payload?.Fields[1]?.Value) / 1000) / 60 }}
+    //             // onClick={() => {
+    //             //     window.title.postMessage(value.vName)
+    //             //     console.log(value.vName);
+    //             // }}
+    //             icon={
+    //                 {
+    //                     path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+    //                     strokeColor: "#FFF",
+    //                     strokeWeight: 1,
+    //                     fillOpacity: 1,
+    //                     fillColor: "#ea3423",
+    //                     scale: 4,
+    //                     rotation: parseInt(value.Payload?.Fields[3]?.Value) / 10
+    //                 }
+    //             }
+    //         >
+    //         </Marker>:<></>
+    //     ))}
+    // </>
 
 }
 
@@ -116,7 +144,7 @@ function OneShip() {
 function MyMap() {
     const [center, setCenter] = useState({ lat: 7.878978, lng: 98.398392 })
     const [allship, setAllShip] = useState([])
-    // let { Type, Geojson } = useParams();
+    let { Type } = useParams();
     const [geoJsonData, setgeoJsonData] = useState('');
     const [map, setMap] = React.useState(null)
     const onMapLoad = useCallback((map) => setMap(map), []);
@@ -125,12 +153,8 @@ function MyMap() {
         map.data.forEach(function (feature) {
             map.data.remove(feature);
         });
-
-
-          
         setCenter({ lat: map.getCenter().lat(), lng: map.getCenter().lng() })
         setgeoJsonData(event.target.value);
-        // setMap(null)
     };
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
@@ -138,22 +162,37 @@ function MyMap() {
         //AIzaSyDIMEOPBeQ-rHzg5kWLRhWyBPlpjrDSfz4
     })
 
-
+    const onNext = useCallback(async res => {
+        const data = await res.json();
+        setAllShip(data);
+    }, [setAllShip]);
+    useStream('https://raw.githubusercontent.com/ukkpaapay/EtnecaMap/main/src/json/ship.json', {onNext});
+    // async function getUser() {
+    //     try {
+    //         const response = await axios.get('https://isatdatapro.orbcomm.com/GLGW/2/RestMessages.svc/JSON/get_return_messages/?access_id=70001969&password=UKSDKUXZ&start_utc=2016-10-12%2010:00:05&include_raw_payload=true');
+    //         setAllShip(response.data)
+    //         // console.log(response.data);
+    //         response.data.Messages.map((value, index) => {
+    //             // if (value.Payload) {
+    //                 console.log(value)
+    //             // }
+    //         })
+    //     } catch (error) {
+    //         console.error(error);
+    //     }
+    // }
 
     useEffect(() => {
+        // getUser()
+        onNext()
         if (map) {
-            axios.get('https://raw.githubusercontent.com/ukkpaapay/EtnecaMap/main/src/json/ship.json')
-                .then(response => response.data)
-                .then((data) => {
-                    setAllShip(data)
-                });
             map.data.loadGeoJson(geoJsonData)
             map.data.setStyle({
                 fillColor: 'transparent',
                 strokeWeight: 1
             });
         }
-    }, [map, geoJsonData]);
+    }, [geoJsonData]);
 
     const onUnmount = React.useCallback(function callback() {
         setMap(null)
